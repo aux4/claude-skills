@@ -1,0 +1,22 @@
+{
+  "profiles": [
+    {
+      "name": "main",
+      "commands": [
+        {
+          "name": "install",
+          "execute": [
+            "mkdir -p ~/.claude/skills",
+            "cp -r ${packageDir}/skills/* ~/.claude/skills/",
+            "cp ${packageDir}/CLAUDE.md ~/.claude/CLAUDE.md",
+            "log:aux4 skills installed to ~/.claude/skills/",
+            "log:CLAUDE.md installed to ~/.claude/CLAUDE.md"
+          ],
+          "help": {
+            "text": "Install aux4 skills to ~/.claude"
+          }
+        }
+      ]
+    }
+  ]
+}
