@@ -74,16 +74,43 @@ The `.aux4` file is JSON with package metadata and command profiles.
 
 ### System Dependencies Format
 
-Each system dependency is an array of install options. The first entry must be a `test:` command:
+When a package requires external tools (CLI binaries, libraries, or runtimes), declare them in `system`. Each entry is an array where:
+
+- The first element is a `test:` command that checks if the tool is already installed
+- The remaining elements are `<prefix>:<package>` pairs for installing it with different package managers
 
 ```json
 "system": [
   ["test:node --version", "brew:node", "apt:nodejs", "linux:nodejs"],
-  ["test:jq --version", "brew:jq", "apt:jq", "dnf:jq"]
+  ["test:jq --version", "brew:jq", "apt:jq", "dnf:jq"],
+  ["test:prettier --version", "npm:prettier"]
 ]
 ```
 
-Supported package managers: `brew`, `apt`, `dnf`, `yum`, `apk`, `npm`, `pkgx`, `linux` (alias for all Linux managers).
+When the package is installed via pkger, aux4 runs the `test:` command first. If it fails (tool not found), it tries to install using one of the available system installers: `aux4 aux4 pkger system <prefix> install <package>`.
+
+| Prefix | Package Manager | Platform |
+|--------|----------------|----------|
+| `brew` | Homebrew | macOS |
+| `apt` | APT | Debian/Ubuntu |
+| `dnf` | DNF | Fedora/RHEL |
+| `yum` | YUM | CentOS/RHEL |
+| `apk` | APK | Alpine |
+| `npm` | npm | Cross-platform (Node.js) |
+| `pkgx` | pkgx | Cross-platform |
+| `linux` | Alias for `apt` + `dnf` + `yum` + `apk` | All Linux |
+
+Common examples:
+
+```json
+"system": [
+  ["test:node --version", "brew:node", "linux:nodejs"],
+  ["test:go version", "brew:go", "linux:golang"],
+  ["test:python3 --version", "brew:python3", "apt:python3"],
+  ["test:prettier --version", "npm:prettier"],
+  ["test:jq --version", "brew:jq", "apt:jq", "apk:jq"]
+]
+```
 
 ### Profiles and Commands
 
@@ -178,19 +205,48 @@ aux4 license use --name mit --owner "Owner" --year 2025 --project "project-name"
 
 Include: description, installation instructions, usage examples, and command reference.
 
-## Step 4: Create Man Pages (Optional)
+## Step 4: Create Man Pages
 
 Place markdown files in `package/man/`. Name them using double underscores for command hierarchy:
 
-- `mytool.md` - for `aux4 mytool`
-- `mytool__run.md` - for `aux4 mytool run`
-- `mytool__run__all.md` - for `aux4 mytool run all`
+| Command | Man Page Filename |
+|---------|-------------------|
+| `aux4 mytool` | `mytool.md` |
+| `aux4 mytool run` | `mytool__run.md` |
+| `aux4 mytool run all` | `mytool__run__all.md` |
 
-Content is plain markdown explaining the command usage with examples.
+Man pages provide detailed documentation for each command, displayed via `aux4 aux4 man <command>`. Use `####` headings for Description, Usage, and Example:
+
+````markdown
+#### Description
+
+The `run` command processes input files and outputs the result. It supports multiple formats and automatically detects the input encoding. If no output file is specified, the result is written to stdout.
+
+#### Usage
+
+```bash
+aux4 mytool run --format <json|csv|yaml> [--output <file>]
+```
+
+--format  The output format to use (required)
+--output  Path to write the output file (default: stdout)
+
+#### Example
+
+```bash
+aux4 mytool run --format csv --output result.csv
+```
+
+```text
+Processing complete. Output written to result.csv
+```
+````
+
+The description should go beyond the short help text — explain what the command does, when to use it, how flags interact, and any important behaviors. Include realistic examples with expected output. Create one man page per command.
 
 ## Step 5: Create Tests (Optional)
 
-Place `.test.md` files in `package/test/`. See the `/aux4-test` skill for the full test format.
+Place `.test.md` files in `package/test/`. Name files using double underscores for command hierarchy (e.g., `mytool__run.test.md` for `aux4 mytool run`), matching the man page convention. Test files are published to hub.aux4.io as usage examples, so they also serve as documentation. See the `/aux4-test` skill for the full test format.
 
 Quick example:
 
@@ -326,7 +382,7 @@ Root `.aux4` for Go packages:
 }
 ```
 
-In the `package/.aux4`, commands reference the binary directly:
+`${packageDir}` always points to the directory where the `package/.aux4` file lives (the `package/` folder), so `${packageDir}/dist/...` resolves to `package/dist/...`. Commands reference the binary directly:
 
 ```json
 "execute": ["${packageDir}/my-binary value(arg1)"]
@@ -340,7 +396,9 @@ Or with stdin:
 
 ### JavaScript Package (Rollup Bundle)
 
-JS packages bundle source + dependencies into a single file using Rollup. They require Node.js at runtime and declare it as a system dependency.
+JS packages bundle source + dependencies into a single file using Rollup. They require Node.js at runtime and declare it as a system dependency. The bundled output goes to `package/lib/`.
+
+`${packageDir}` always points to the directory where the `package/.aux4` file lives (the `package/` folder), so `${packageDir}/lib/my-tool.mjs` resolves to `package/lib/my-tool.mjs`.
 
 ```
 my-js-package/
@@ -425,7 +483,74 @@ export default {
 };
 ```
 
-In `package/.aux4`, commands invoke Node.js explicitly and add a Node.js system dependency:
+### JS Package with Native Dependencies
+
+Some dependencies have native binaries (e.g., SQLite, libsql) that Rollup cannot bundle. In this case:
+
+1. Exclude those dependencies from Rollup's `external` array
+2. Add a `package.json` inside `package/lib/` with only those excluded dependencies
+3. Update the build script to run `npm install` in `package/lib/` after bundling
+
+```
+my-js-package/
+├── .aux4
+├── package.json       # "build": "rollup -c && cd package/lib && npm install"
+├── rollup.config.js   # Excludes native deps
+└── package/
+    ├── .aux4
+    └── lib/
+        ├── my-tool.js     # Bundled output
+        └── package.json   # Only the excluded native dependencies
+```
+
+`rollup.config.js` — exclude native deps:
+
+```javascript
+export default {
+  input: 'main.js',
+  output: {
+    file: 'package/lib/my-tool.js',
+    format: 'es'
+  },
+  plugins: [
+    nodeResolve({ preferBuiltins: true }),
+    commonjs(),
+    json()
+  ],
+  external: [
+    'fs', 'path', 'crypto', 'util', 'stream', 'os', 'process',
+    'libsql',           // native dependency — cannot be bundled
+    /^@libsql\/.*/      // platform-specific binaries
+  ]
+};
+```
+
+`package.json` (root) — build script runs `npm install` in `package/lib/`:
+
+```json
+{
+  "scripts": {
+    "build": "rollup -c && cd package/lib && npm install"
+  }
+}
+```
+
+`package/lib/package.json` — only the excluded native dependencies:
+
+```json
+{
+  "type": "module",
+  "dependencies": {
+    "libsql": "^0.5.20"
+  }
+}
+```
+
+Root `.aux4` stays the same (`aux4 build` runs `npm run build`), which triggers Rollup and then installs the native deps in `package/lib/`.
+
+### Referencing Files in Commands
+
+In `package/.aux4`, commands reference files relative to `${packageDir}` (the `package/` directory):
 
 ```json
 {
@@ -614,3 +739,4 @@ When creating a package, always:
 10. Use `value()`, `values()`, `param()`, `params()` for parameter formatting in execute commands.
 11. For Go packages, commands reference `${packageDir}/binary-name`.
 12. For JS packages, commands reference `node ${packageDir}/lib/bundle.mjs` and include Node.js in system dependencies.
+13. When writing markdown files (man pages, `.test.md`, `README.md`), use 4 backticks (````) for outer fenced code blocks when they contain nested 3-backtick code blocks inside. Never escape backticks with backslash.

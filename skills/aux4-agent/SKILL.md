@@ -557,3 +557,4 @@ When creating an aux4 AI agent:
 8. For agents with multiple behaviors, create separate instruction files (e.g., `instructions/analyze.md`, `instructions/summarize.md`).
 9. Add a `chat` command if the agent should support interactive conversation.
 10. Create man pages and tests following `/aux4-command` and `/aux4-test` conventions.
+11. When writing markdown files (instructions, man pages, `.test.md`), use 4 backticks (````) for outer fenced code blocks when they contain nested 3-backtick code blocks inside. Never escape backticks with backslash.

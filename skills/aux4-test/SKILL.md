@@ -423,8 +423,18 @@ aux4 config get dev | jq .
 
 ## Test File Naming Conventions
 
-- Name test files after the command they test: `greet.test.md`, `config-get.test.md`
 - Place in `package/test/` directory
+- Use double underscores (`__`) to separate command hierarchy levels in the filename, matching the man page convention:
+
+| Command | Test File |
+|---------|-----------|
+| `aux4 greet` | `greet.test.md` |
+| `aux4 greet hello` | `greet__hello.test.md` |
+| `aux4 config get` | `config__get.test.md` |
+| `aux4 pdf parse` | `pdf__parse.test.md` |
+| `aux4 repository read` | `repository__read.test.md` |
+
+- Test files are published to hub.aux4.io as usage examples alongside man pages, so they also serve as documentation
 - Use descriptive heading hierarchy:
   - `#` - Command or feature name
   - `##` - Scenario or context
@@ -451,3 +461,4 @@ When creating tests:
 4. Write tests for all command variations (default values, flags, args, errors)
 5. Use appropriate expect modifiers for flexible matching
 6. Group related tests under descriptive headings
+7. When writing `.test.md` files, use 4 backticks (````) for outer fenced code blocks when they contain nested 3-backtick code blocks inside. Never escape backticks with backslash.

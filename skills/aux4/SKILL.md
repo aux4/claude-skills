@@ -144,11 +144,44 @@ brew install aux4              # Homebrew
 npm install -global aux4       # npm
 ```
 
+### Investigating Commands
+
+Use `--help` on any command to see its subcommands, variables, and descriptions:
+
+```bash
+aux4 --help                    # List all top-level commands
+aux4 deploy --help             # List subcommands under deploy
+aux4 deploy run --help         # Show variables for deploy run
+```
+
+Use `--showSource` to see the execute instructions for a command:
+
+```bash
+aux4 deploy run --showSource   # Show the execute array for deploy run
+```
+
 ### Built-in Commands
 
 ```bash
 aux4 aux4 version              # Show version
-aux4 aux4 man <command>        # Show command help
-aux4 aux4 source <command>     # Show command source
+aux4 aux4 man <command>        # Show command man page
+aux4 aux4 source <command>     # Show command source (.aux4 definition)
 aux4 aux4 which <command>      # Show where command is defined
+```
+
+### Package Manager (pkger)
+
+```bash
+aux4 aux4 pkger list           # List installed packages
+aux4 aux4 pkger man <package>  # Show package documentation (README.md)
+aux4 aux4 pkger install <pkg>  # Install a package from hub.aux4.io
+aux4 aux4 pkger uninstall <pkg> # Uninstall a package
+```
+
+Examples:
+
+```bash
+aux4 aux4 pkger list                     # See all installed packages
+aux4 aux4 pkger man aux4/config          # Read the config package docs
+aux4 aux4 pkger install aux4/db-sqlite   # Install db-sqlite package
 ```

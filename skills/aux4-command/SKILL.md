@@ -251,7 +251,7 @@ Operators: `==`, `!=`
 
 ## Man Page
 
-Create a markdown file in the `man/` directory. Use double underscores (`__`) to separate command hierarchy levels in the filename:
+Every command should have a man page. Create a markdown file in the `man/` directory (or `package/man/` if inside a package). Use double underscores (`__`) to separate command hierarchy levels in the filename:
 
 | Command | Man Page Filename |
 |---------|-------------------|
@@ -261,33 +261,77 @@ Create a markdown file in the `man/` directory. Use double underscores (`__`) to
 | `aux4 db migrate` | `db__migrate.md` |
 | `aux4 aux4 releaser release` | `aux4_releaser__release.md` |
 
+Man pages are displayed when running `aux4 aux4 man <command>`.
+
 ### Man Page Format
 
-```markdown
+Use `####` headings for Description, Usage, and Example sections. The description should explain what the command does in detail, not just repeat the help text. Include all flags and their defaults, and show realistic examples with expected output.
+
+````markdown
 #### Description
 
-Brief description of what the command does and when to use it.
+The `run` command processes input files using the specified format and writes the result to stdout or an output file. It supports multiple output formats and automatically detects the input encoding.
 
 #### Usage
 
-\`\`\`bash
-aux4 mytool run --format json [--output file]
-\`\`\`
+```bash
+aux4 mytool run --format <json|csv|yaml> [--output <file>]
+```
+
+--format  The output format to use (required)
+--output  Path to write the output file. If not provided, output goes to stdout
 
 #### Example
 
-\`\`\`bash
+```bash
 aux4 mytool run --format csv --output result.csv
-\`\`\`
-
-\`\`\`text
-Processing complete. Output written to result.csv
-\`\`\`
 ```
+
+```text
+Processing complete. Output written to result.csv
+```
+````
+
+### Real-World Example
+
+````markdown
+#### Description
+
+The `install` command automates packaging and installing a local build of your aux4 package. It reads the project metadata from the `.aux4` file in the specified directory, temporarily appends a `-local` suffix to the version, and generates a zip archive. After building, it uninstalls any existing version, installs the freshly built local package, and restores the original version in your project file.
+
+#### Usage
+
+```bash
+aux4 aux4 releaser install [--dir <path>] [--rm <true|false>]
+```
+
+--dir   The path to the directory containing your `.aux4` package definition (default: `.`)
+--rm    Remove the generated local zip file after installation (default: `false`)
+
+#### Example
+
+```bash
+aux4 aux4 releaser install --dir ./my-package --rm true
+```
+
+This command will:
+1. Load the version from `./my-package/.aux4`.
+2. Update the version to `<current>-local` and build a zip artifact.
+3. Uninstall any existing published version of this package.
+4. Install the newly built local package using aux4 pkger.
+5. Restore the original version string in `.aux4`.
+6. Remove the local zip file, since `--rm true` was specified.
+
+```text
+The package myscope/my-package:0.1.0-local has been installed
+```
+````
 
 ## Test
 
-Add tests to the appropriate `.test.md` file. If testing a new command in an existing file, add a new heading section:
+Add tests in `test/` (or `package/test/`). Name the file using double underscores for command hierarchy, matching the man page convention (e.g., `mytool__run.test.md` for `aux4 mytool run`). Test files are published to hub.aux4.io as usage examples, so they also serve as documentation.
+
+If testing a new command in an existing file, add a new heading section:
 
 ````markdown
 ## mytool run
@@ -335,6 +379,8 @@ When adding a command:
 4. Define all variables with at minimum `name` and `text`. Add `default` for optional params, `arg: true` for positional args, `options` for select menus.
 5. Use the appropriate executor prefix for each instruction in the execute array.
 6. Use parameter functions (`value()`, `values()`, `param()`, `params()`) when passing variables to external commands or binaries.
-7. Create a man page with the correct double-underscore filename.
+7. Create a man page in `man/` (or `package/man/`) with the correct double-underscore filename. The man page should have `#### Description`, `#### Usage`, and `#### Example` sections. The description should go beyond the short help text — explain what the command does, when to use it, how flags work, and any important behaviors. Include realistic examples with expected output.
 8. Add tests covering the main use case, edge cases, and error cases.
-9. Do not modify existing commands unless explicitly asked.
+9. If the new command requires an external tool (CLI binary, library, or runtime), add it to the `system` array in the package `.aux4`: `["test:tool --version", "brew:tool", "linux:tool"]`. The `test:` entry checks if it's already installed; the remaining entries are install options. See `/aux4-package` for the full system dependencies format.
+10. Do not modify existing commands unless explicitly asked.
+11. When writing markdown files (man pages, `.test.md`), use 4 backticks (````) for outer fenced code blocks when they contain nested 3-backtick code blocks inside. Never escape backticks with backslash.
