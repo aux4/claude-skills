@@ -1,8 +1,17 @@
-# aux4 Claude Code Skills
+# aux4 Skills
 
 Claude Code skills for creating and working with [aux4](https://aux4.io) packages.
 
 ## Installation
+
+### Plugin Marketplace (recommended)
+
+```
+/plugin marketplace add aux4/skills
+/plugin install aux4-skills@aux4-skills
+```
+
+### Manual (via aux4)
 
 ```bash
 aux4 install
@@ -18,6 +27,7 @@ This copies all skills to `~/.claude/skills/` and the `CLAUDE.md` to `~/.claude/
 | `/aux4-package` | Creates aux4 packages from scratch — Go and JS, build, publish, release |
 | `/aux4-command` | Adds commands to existing `.aux4` files — profiles, variables, man pages, tests |
 | `/aux4-test` | Creates and runs `.test.md` test files — execute, expect, error, file blocks, hooks |
+| `/aux4-docs` | Updates README.md and man pages — structure, conventions, keeping docs in sync |
 | `/aux4-config` | Works with `config.yaml` files — get, set, merge, nested paths, `--config` flag |
 | `/aux4-agent` | Creates AI agents using `aux4/ai-agent` — instructions, model config, tools, chat |
 
@@ -35,6 +45,10 @@ In Claude Code, type the skill name followed by what you want to do:
 
 ```
 /aux4-test write tests for the deploy command
+```
+
+```
+/aux4-docs update the README with the new deploy command
 ```
 
 ```

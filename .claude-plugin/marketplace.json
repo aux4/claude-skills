@@ -1,0 +1,28 @@
+{
+  "name": "aux4-skills",
+  "owner": {
+    "name": "aux4",
+    "email": "support@aux4.io"
+  },
+  "metadata": {
+    "description": "aux4 CLI generator skills for creating packages, commands, tests, documentation, configuration, and AI agents",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "aux4-skills",
+      "description": "Skills for building aux4 packages — CLI generator, commands, tests, docs, config, and AI agents",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./package/skills/aux4",
+        "./package/skills/aux4-package",
+        "./package/skills/aux4-command",
+        "./package/skills/aux4-test",
+        "./package/skills/aux4-docs",
+        "./package/skills/aux4-config",
+        "./package/skills/aux4-agent"
+      ]
+    }
+  ]
+}
