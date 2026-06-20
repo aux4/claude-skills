@@ -270,7 +270,7 @@ Read `../references/build-configuration.md` for the complete build setup, includ
 - Referencing files in commands (`${packageDir}/binary` vs `node ${packageDir}/lib/bundle.mjs`)
 - Key differences between Go and JavaScript packages
 - `.gitignore` templates for Go, JS, and Shell-only packages
-- GitHub Actions publish workflow (`aux4/publish-package-action@v1`)
+- GitHub Actions workflows using the unified `aux4/action@v1` (a `publish.yml` pipeline + a PR `ci.yml` gate)
 - Symlink for local Go testing
 - Build, install locally, and publish commands (pkger + package-releaser)
 
@@ -289,7 +289,11 @@ When creating a package, always:
    - JS: simple `npm run build` + `rollup.config.js` + `package.json`
    - Shell-only: empty build or no build needed
 8. Create a `.gitignore` file excluding build artifacts (`package/dist/`, `node_modules/`, etc.), platform files (`.DS_Store`), and language-specific generated files (`go.sum`, symlinks).
-9. Create `.github/workflows/publish.yml` with the appropriate build steps for the package type. **The workflow must run tests before publishing** — add a test step after the build step.
+9. Create GitHub Actions workflows in the **repo root** `.github/workflows/` (sibling to `package/`) using the unified **`aux4/action@v1`** action (`command: lint | test | publish`). Scaffold BOTH files:
+   - **`publish.yml`** — multi-job pipeline `lint` → `test-linux` + `test-darwin` → `publish`, triggered on push to `main` and `workflow_dispatch` (with a `level` choice input: patch/minor/major). The `lint` job uses `command: lint` with `strict: 'true'`; the test jobs use `command: test`; the `publish` job uses `command: publish` with `level: ${{ inputs.level || 'patch' }}`, `aux4_token: ${{ secrets.AUX4_ACCESS_TOKEN }}`, `github_token: ${{ secrets.GITHUB_TOKEN }}` (needs `permissions: contents: write` and `concurrency: { group: publish-package, cancel-in-progress: false }`).
+   - **`ci.yml`** — PR gate triggered on `pull_request` + `push: branches-ignore: [main]`, with `concurrency` cancel-in-progress. Jobs: `lint` (`command: lint`, `strict: 'true'`) and `test` (`command: test`). NO publish job.
+
+   **Build-vs-no-build variant (decide per package):** a package is JS-with-build if its repo-root `package.json` has a `scripts.build`. For JS-with-build, add `Set up Node.js` (v22) + `npm install` + `npm run build` steps to the lint/publish jobs, and pass `build_command: npm run build` to the `test` steps. For shell-only / plain-`.mjs` packages with no build script, OMIT the Node/npm/build steps and `build_command` — just `actions/checkout@v6` then the `aux4/action@v1` step. Never reference the legacy component actions (`aux4/lint-package-action`, `aux4/test-package-action`, `aux4/publish-package-action`).
 10. Use `${packageDir}` to reference files within the package.
 11. **Always pass known parameters by index using `values(var1, var2, ...)`** when calling external binaries or scripts. The target program receives them as positional args and doesn't need to parse flags — aux4 handles all variable resolution including `--config` binding. Only use `value(*)` (all params as JSON) when the parameter list is dynamic.
 12. For Go packages, commands reference `${packageDir}/binary-name`.
