@@ -114,6 +114,19 @@ Add `"private": true` to a command to hide it from `--help` output. The command 
 }
 ```
 
+Variables support `private` in the same way — hidden from help, man and autocomplete, while still resolving normally:
+
+```json
+{
+  "name": "internalToken",
+  "text": "internal plumbing, not for users",
+  "default": "tok-default",
+  "private": true
+}
+```
+
+Do not confuse it with `hide`, which masks the **value** a user types and leaves the variable listed in the help. `private` hides the variable itself.
+
 ### Variables
 
 Variables are parameters for commands. They support:
@@ -127,8 +140,9 @@ Variables are parameters for commands. They support:
 | `multiple` | boolean | Accept multiple values |
 | `env` | string | Read from environment variable |
 | `options` | string[] | List of choices for select prompt (with `multiple: true`, shows checkbox list) |
-| `hide` | boolean | Hide input (for passwords) |
+| `hide` | boolean | Mask the value while typing (for passwords); the variable is still listed in help |
 | `encrypt` | boolean | Encrypt the value |
+| `private` | boolean | Hide the variable from help, man and autocomplete; it still resolves normally |
 
 **Resolution order**: argument > environment variable > config > encrypted > default > interactive prompt
 

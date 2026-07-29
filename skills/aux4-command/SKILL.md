@@ -74,9 +74,13 @@ See `/aux4` for full profile routing examples, nesting patterns, and naming conv
   "env": "ENV_VAR_NAME",
   "options": ["choice1", "choice2", "choice3"],
   "hide": false,
-  "encrypt": false
+  "encrypt": false,
+  "private": false
 }
 ```
+
+- `private: true` keeps the variable out of the help, the man page and autocomplete, while it still resolves normally — it can be passed, keeps its default, and binds to env and config. Use it for plumbing a command needs but a user should not have to read about. If every variable of a command is private, no parameters section is printed.
+- `hide: true` is a different thing: it masks the **value** while the user types it (for passwords) and leaves the variable listed in the help. `private` hides the variable, `hide` hides what you type into it.
 
 See `/aux4` for the full property reference, resolution order, special variables (`${response}`, `${packageDir}`, `${aux4HomeDir}`), and dot variable (nested parameter) syntax.
 
